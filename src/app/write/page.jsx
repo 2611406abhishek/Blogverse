@@ -1,19 +1,21 @@
 "use client";
 import Image from 'next/image';
 import styles from './writePage.module.css';
-import { useEffect, useState } from 'react';
-import ReactQuill from 'react-quill';
+import { useEffect, useState ,useMemo} from 'react';
+// import ReactQuill from 'react-quill';
 import "react-quill/dist/quill.bubble.css";
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { app } from '../../../utils/firebase';
-
+import dynamic from "next/dynamic";  
 
 const WritePage = () => {
-  const { status } = useSession();
-  const router = useRouter();
 
+  
+    const { status } = useSession();
+    const router = useRouter();
+    const ReactQuill = useMemo(() => dynamic(() => import('react-quill'), { ssr: false }),[]);
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [media, setMedia] = useState("");
@@ -26,7 +28,6 @@ const WritePage = () => {
     const upload = () => {
       const name = new Date().getTime() + file.name;
       const storageRef = ref(storage, name);
-
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       uploadTask.on(
@@ -55,42 +56,36 @@ const WritePage = () => {
 
     file && upload();
   }, [file]);
-
-  if (status === "loading") {
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
-  if (status === "unauthenticated") {
-    router.push("/");
-  }
-
-  const slugify = (str) =>
-    str
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-  const handleSubmit = async () => {
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        desc: value,
-        img: media,
-        slug: slugify(title),
-        catSlug: catSlug || "style", //If not selected, choose the general category
-      }),
-    });
   
-    if (res.status === 200) {
-      const data = await res.json();
+      if (status === "loading") {
+        return <div className={styles.loading}>Loading...</div>;
+      }
 
-      router.push(`/posts/${data.slug}`);
-    }
-  };
+      if (status === "unauthenticated") {
+        router.push("/");
+      }
 
+      const slugify = (str) =>str.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
+
+      const handleSubmit = async () => {
+        const res = await fetch("/api/posts", {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            desc: value,
+            img: media,
+            slug: slugify(title),
+            catSlug: catSlug || "style", 
+          }),
+        });
+      
+        if (res.status === 200) {
+          const data = await res.json();
+
+          router.push(`/posts/${data.slug}`);
+        }
+      };
+    
   return (
     <div className={styles.container}>
       <input
