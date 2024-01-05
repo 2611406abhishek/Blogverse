@@ -16,7 +16,7 @@ const getData = async (page, cat) => {
   if (!res.ok) {
     throw new Error();
   }
-
+  
   return res.json();
 };
 
